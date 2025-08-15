@@ -2,77 +2,103 @@
 <html lang="en">
 
 <head>
-    <meta charset="UTF-8" />
+    <meta charset="UTF-8">
     <title>File & Folder Upload Demo</title>
 
+    <!-- Some very small styling so the demo looks a little nicer -->
+    <style>
+        body {font-family: system-ui, sans-serif; margin: 2rem;}
+        section{margin-bottom:1.5rem;border:1px solid #ddd;padding:.75rem;border-radius:.25rem;}
+        label{display:flex;align-items:center;color:#555;cursor:pointer;font-size:.9rem;}
+        svg{margin-right:.5rem;}
+        .hidden{display:none;}
+    </style>
 </head>
 
 <body>
+    <h1>Transfer and size file over email</h1>
 
-    <div>
-        <h1>Transfer and size file over email</h1>
+    <!-- ---------- Single File Section ---------- -->
+    <section id="single-file-section">
+        <h2>Upload a large file to split into sendable chunks</h2>
 
-        <!-- ---------- Single File Section ---------- -->
-        <section>
-            <h2>Upload a large file to split into sendable chunks</h2>
+        <label for="single-file-input">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+                 viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <!-- Square border -->
+                <rect x="3" y="3" width="18" height="18" rx="4" ry="4"/>
+                <!-- Up arrow -->
+                <polyline points="12 16 12 8 9 11"/>
+                <polyline points="12 16 12 8 15 11"/>
+            </svg>
 
-            <label for="single-file">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
-                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <!-- Square border -->
-                    <rect x="3" y="3" width="18" height="18" rx="4" ry="4" />
-                    <!-- Up arrow -->
-                    <polyline points="12 16 12 8 9 11" />
-                    <polyline points="12 16 12 8 15 11" />
-                </svg>
+            <span>Click to select a file</span>
+            <span>or drag & drop here</span>
+        </label>
 
-                <span >Click to select a file</span>
-                <span >or drag & drop here</span>
-            </label>
+        <input id="single-file-input" type="file"
+               accept="*/*" class="hidden"
+               onchange="onSingleFileChange(event)">
+    </section>
 
-            <input id="single-file" type="file" accept="*/*" class="hidden" onchange="onSingleFileChange(event)">
-        </section>
+    <!-- ---------- Folder Section ---------- -->
+    <section id="folder-section">
+        <h2>Upload a folder of sendable chunks to reconstruct the original big file</h2>
 
-        <section>
-            <h2 >Upload a Folder of sendable chunks to reconstruct the original big file</h2>
+        <label for="folder-input">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+                 viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <!-- Square border -->
+                <rect x="3" y="3" width="18" height="18" rx="4" ry="4"/>
+                <!-- Up arrow -->
+                <polyline points="12 16 12 8 9 11"/>
+                <polyline points="12 16 12 8 15 11"/>
+            </svg>
 
-            <label for="folder-files">
+            <span>Click to select a folder</span>
+            <span>or drag & drop here</span>
+        </label>
 
+        <input id="folder-input" type="file"
+               webkitdirectory directory multiple
+               accept="*/*" class="hidden"
+               onchange="onFolderFilesChange(event)">
+    </section>
 
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
-                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <!-- Square border -->
-                    <rect x="3" y="3" width="18" height="18" rx="4" ry="4" />
-                    <!-- Up arrow -->
-                    <polyline points="12 16 12 8 9 11" />
-                    <polyline points="12 16 12 8 15 11" />
-                </svg>
-                <span>Click to select a folder</span>
-                <span>or drag & drop here</span>
-            </label>
+    <!-- ---------- Multiple Parts Section ----------
+         (new) ----------------------------------- -->
+    <section id="parts-section">
+        <h2>Upload multiple part files to reconstruct the original big file</h2>
 
-            <input id="folder-files" type="file" webkitdirectory directory multiple accept="*/*" class="hidden"
-                onchange="onFolderFilesChange(event)">
-        </section>
-    </div>
+        <label for="parts-input">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+                 viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <!-- Square border -->
+                <rect x="3" y="3" width="18" height="18" rx="4" ry="4"/>
+                <!-- Up arrow -->
+                <polyline points="12 16 12 8 9 11"/>
+                <polyline points="12 16 12 8 15 11"/>
+            </svg>
+
+            <span>Click to select part files</span>
+            <span>or drag & drop here</span>
+        </label>
+
+        <!-- No webkitdirectory attribute – just a normal multi‑file selector -->
+        <input id="parts-input" type="file"
+               accept="*/*" class="hidden" multiple
+               onchange="onPartsFilesChange(event)">
+    </section>
 
     <script>
-        function handleSingleFile(file) {
-            console.log('Received single file:', file);
-            splitAndDownload(file, 20); //25mb default gmail file limit
-        }
-
-        /**
-         * Split a File into smaller chunks, turn them into Files,
-         * then trigger download prompts for each chunk.
-         *
-         * @param {File} file           The original file to split.
-         * @param {number} maxChunkSizeMB  Maximum size of each chunk (in MB).
-         */
+        /* ------------------------------------------------------------------
+           Utility: split a file into chunks and trigger downloads for each
+           ------------------------------------------------------------------ */
         async function splitAndDownload(file, maxChunkSizeMB) {
-            if (!(file instanceof File)) {
-                throw new TypeError('first argument must be a File');
-            }
+            if (!(file instanceof File)) throw new TypeError('first argument must be a File');
 
             const maxBytes = Math.max(1, maxChunkSizeMB * 1024 * 1024);
             const totalSize = file.size;
@@ -80,109 +106,97 @@
             let chunkIndex = 0;
 
             while (start < totalSize) {
-                const end = Math.min(start + maxBytes, totalSize);
+                const end   = Math.min(start + maxBytes, totalSize);
                 const slice = file.slice(start, end);
 
-                // Build a new File object from the Blob slice
                 const chunkName = `${file.name}.part${chunkIndex + 1}`;
                 const chunkFile = new File([slice], chunkName, {
-                    type: file.type,
-                    lastModified: file.lastModified,
+                    type:      file.type,
+                    lastModified: file.lastModified
                 });
 
-                // Create an invisible link and click it to start download
+                // Trigger download
                 const url = URL.createObjectURL(chunkFile);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = chunkName;          // Suggest name for the Save‑as dialog
-                a.style.display = 'none';
+                const a   = document.createElement('a');
+                a.href    = url;
+                a.download= chunkName;
+                a.style.display='none';
                 document.body.appendChild(a);
-                a.click();                       // Triggers the download
+                a.click();
 
-                // Clean up
-                setTimeout(() => {
-                    URL.revokeObjectURL(url);
-                    document.body.removeChild(a);
-                }, 0);
+                setTimeout(() => { URL.revokeObjectURL(url); document.body.removeChild(a); }, 0);
 
-                // Prepare for next chunk
-                start = end;
+                start   += maxBytes;
                 chunkIndex++;
             }
         }
 
-
-        function handleFolderFiles(files) {
-            const fileArray = Array.from(files);
-            console.log(`Received ${fileArray.length} files from folder:`, fileArray);
-
-            reconstructAndDownload(fileArray);
-        }
-
-        /**
-         * Re‑assemble a set of chunk files back into the original file and trigger a download.
-         *
-         * @param {File[]}  chunkFiles   Array of File objects that represent the split parts.
-         *                               The order must match the original sequence (e.g. part1, part2…).
-         * @returns {Promise<void>}
-         */
+        /* ------------------------------------------------------------------
+           Utility: merge an array of part files back into the original file
+           ------------------------------------------------------------------ */
         async function reconstructAndDownload(chunkFiles) {
-            if (!Array.isArray(chunkFiles) || !chunkFiles.length) {
+            if (!Array.isArray(chunkFiles) || !chunkFiles.length)
                 throw new Error('You must provide an array of File objects.');
-            }
 
-            // Optional sanity check – all chunks should have the same type
+            // Sanity check – all chunks should have same MIME type
             const mime = chunkFiles[0].type;
-            for (const f of chunkFiles) {
-                if (f.type !== mime) {
-                    console.warn(`Chunk ${f.name} has a different MIME type (${f.type})`);
-                }
-            }
+            for (const f of chunkFiles)
+                if (f.type !== mime) console.warn(`Chunk ${f.name} has a different MIME type (${f.type})`);
 
-            // Sort by numeric suffix in the file name to guarantee correct order
+            // Sort by numeric suffix in the file name (e.g. part1, part2…)
             const sorted = [...chunkFiles].sort((a, b) => {
-                const getIndex = fn =>
-                    parseInt(fn.match(/\.part(\d+)$/)?.[1] ?? 0, 10);
+                const getIndex = fn => parseInt(fn.match(/\.part(\d+)$/)?.[1] ?? 0, 10);
                 return getIndex(a.name) - getIndex(b.name);
             });
 
-            // Concatenate all chunks into one Blob
-            const parts = sorted.map(f => f);          // an array of File/Blob objects
-            const mimeType = sorted[0].type || 'application/octet-stream';
-            const merged = new Blob(parts, { type: mimeType });
+            // Concatenate all chunks
+            const merged = new Blob(sorted, { type: mime || 'application/octet-stream' });
 
-            // Decide on a file name for the re‑assembled file.
-            // We strip the ".partN" suffix from the first chunk’s name.
-            const originalName =
-                sorted[0].name.replace(/\.part\d+$/i, '') || 'reconstructed_file';
+            // Remove the ".partN" suffix from the first chunk to restore original name
+            const originalName = sorted[0].name.replace(/\.part\d+$/i, '') || 'reconstructed_file';
 
-            console.log(`reconstructed ${originalName}`);
-            // Trigger download
+            // Trigger download of the merged file
             const url = URL.createObjectURL(merged);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = originalName;
-            a.style.display = 'none';
+            const a   = document.createElement('a');
+            a.href    = url;
+            a.download= originalName;
+            a.style.display='none';
             document.body.appendChild(a);
             a.click();
 
-            // Clean up after a tiny delay so the browser can start downloading
-            setTimeout(() => {
-                URL.revokeObjectURL(url);
-                document.body.removeChild(a);
-            }, 0);
+            setTimeout(() => { URL.revokeObjectURL(url); document.body.removeChild(a); }, 0);
         }
 
-
-        // ---------- Event Handlers ----------
-        function onSingleFileChange(event) {
-            const file = event.target.files[0];
+        /* ------------------------------------------------------------------
+           Event handlers for the three UI sections
+           ------------------------------------------------------------------ */
+        function onSingleFileChange(e) {
+            const file = e.target.files[0];
             if (file) handleSingleFile(file);
         }
+        function handleSingleFile(file) {
+            console.log('Received single file:', file);
+            splitAndDownload(file, 20); // 20 MB default Gmail limit
+        }
 
-        function onFolderFilesChange(event) {
-            const files = event.target.files;
+        function onFolderFilesChange(e) {
+            const files = e.target.files;
             if (files && files.length > 0) handleFolderFiles(files);
+        }
+        function handleFolderFiles(files) {
+            const fileArray = Array.from(files);
+            console.log(`Received ${fileArray.length} files from folder:`, fileArray);
+            reconstructAndDownload(fileArray);
+        }
+
+        function onPartsFilesChange(e) {
+            const files = e.target.files;
+            if (files && files.length > 0) handlePartsFiles(files);
+        }
+        function handlePartsFiles(files) {
+            const fileArray = Array.from(files);
+            console.log(`Received ${fileArray.length} part files:`, fileArray);
+            reconstructAndDownload(fileArray);
         }
     </script>
 </body>
